@@ -5,13 +5,13 @@
 //  Copyright (c) 2018 Agora IO. All rights reserved.
 //
 #define _GNU_SOURCE
-#include <fipc.h>
-#include <fipc_poll.h>
-#include <fipc_debug.h>
 #include "fipc_test.h"
+#include <fcntl.h>
+#include <fipc.h>
+#include <fipc_debug.h>
+#include <fipc_poll.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <sys/wait.h>
 
 static int64_t threads = 1;
@@ -21,9 +21,8 @@ static int64_t loops = 10;
 static int64_t dir = 1;
 static int64_t help_needed = 0;
 static int64_t nohead = 0;
-static int64_t iomode = 1;
 static int64_t read_fd = -1;
-static int64_t event_type = 1;
+static int64_t type = 1;
 
 static int64_t test_times = 0;
 
@@ -34,9 +33,9 @@ static void help(const char *exec_name)
 	log_info("\t size=[size] (default 4096)");
 	log_info("\t recv_chunk_size=[size] (default 4096)");
 	log_info("\t loops=[loop] (default 10)");
-	log_info("\t iomode=[0|1] (0:nonblock;1:block)(default block)");
 	log_info("\t nohead=[0|1] (default 0)");
-	log_info("\t event_type=[1|2|3|4] (1:pipe;2:event_fd;3:spin at userland;4:legacy pipe)(default 1)");
+	log_info("\t type=[1|2|3|4] (1:pipe;2:event_fd;3:spin at "
+		 "userland;4:legacy pipe)(default 1)");
 }
 
 static int64_t get_val_from_opt(char *arg, const char *opt)
@@ -91,10 +90,10 @@ static int wait_for_channel(int64_t id, int mode)
 	// int ret = fipc_poll(&fds, 1, -1);
 	// if (ret <= 0)
 	// 	return -1;
-	
+
 	// if (fds.revents & (POLLHUP | POLLRDHUP | POLLERR | POLLNVAL))
 	// 	return -1;
-	
+
 	// return 0;
 }
 
@@ -109,18 +108,17 @@ static int perf_thread_callback(void *param)
 		char *buf = malloc(recv_chunk_size);
 		while (1) {
 			ret = fipc_read(id, buf, recv_chunk_size);
-			if (ret == 0 && iomode == 0) {
-				ret = wait_for_channel(id, 0);
+			if (ret == 0) {
+				break;
 			}
 			if (ret < 0)
 				break;
-			
+
 			p->read_size += ret;
 		}
 
 		free(buf);
 
-		printf("close fd %ld\n", id);
 		fipc_close(id);
 
 	} else { // write
@@ -130,8 +128,8 @@ static int perf_thread_callback(void *param)
 		int64_t ret;
 		while (1) {
 			ret = write_all_buffer(id, buf, send_chunk_size);
-			if (ret < send_chunk_size && iomode == 0) {
-				ret = wait_for_channel(id, 1);
+			if (ret == 0) {
+				break;
 			}
 			if (ret < 0)
 				break;
@@ -139,7 +137,7 @@ static int perf_thread_callback(void *param)
 			p->write_size += ret;
 		}
 		free(buf);
-		printf("close fd %ld\n", id);
+
 		fipc_close(id);
 	}
 	free(p);
@@ -152,19 +150,23 @@ static int timer_callback_fun(int real_dur, void *p)
 	int64_t total_read = 0;
 	int64_t total_write = 0;
 	int64_t total_mem = 0;
-	for (int i = 0; i < threads; i++){
+	for (int i = 0; i < threads; i++) {
 		total_read += param[i]->read_size;
 		total_write += param[i]->write_size;
 		param[i]->read_size = 0;
 		param[i]->write_size = 0;
 	}
-	int64_t read_perf = real_dur ? (total_read * 1000 / (real_dur*1024*1024)) : 0;
-	int64_t write_perf = real_dur ? (total_write * 1000 / (real_dur*1024*1024)) : 0;
-	printf("%ld,%d,%ld,%ld\n", total_mem / 1024, real_dur, read_perf, write_perf);
+	int64_t read_perf
+		= real_dur ? (total_read * 1000 / (real_dur * 1024 * 1024)) : 0;
+	int64_t write_perf = real_dur
+		? (total_write * 1000 / (real_dur * 1024 * 1024))
+		: 0;
+	printf("%ld,%d,%ld,%ld\n", total_mem / 1024, real_dur, read_perf,
+		write_perf);
 	test_times++;
 	if (test_times >= loops) {
-		for (int i = 0; i < threads; i++){
-			printf("close fd %ld\n", param[i]->channel);
+		for (int i = 0; i < threads; i++) {
+			printf("close fd %.16lx\n", param[i]->channel);
 			fipc_close(param[i]->channel);
 		}
 	}
@@ -173,15 +175,15 @@ static int timer_callback_fun(int real_dur, void *p)
 static int configure_pipe_size(int fd)
 {
 #ifdef F_SETPIPE_SZ
-        int ret = fcntl(fd, F_SETPIPE_SZ, 1 * 1024 *1024);
-        if (ret < 0) {
-                return ret;
-        }
+	int ret = fcntl(fd, F_SETPIPE_SZ, 1 * 1024 * 1024);
+	if (ret < 0) {
+		return ret;
+	}
 	return 0;
 #else
-        
+
 #endif
-        return 0;
+	return 0;
 }
 
 static int fipc_clear_fd_flag(int fd, int flag)
@@ -200,7 +202,8 @@ static int fipc_clear_fd_flag(int fd, int flag)
 
 int main(int argc, char **argv)
 {
-	if (argc == 1){
+	fipc_init();
+	if (argc == 1) {
 		help(argv[0]);
 		exit(0);
 	}
@@ -217,70 +220,67 @@ int main(int argc, char **argv)
 		parse_arg(argv[i], "recv_chunk_size=", &recv_chunk_size);
 		parse_arg(argv[i], "loops=", &loops);
 		parse_arg(argv[i], "nohead=", &nohead);
-		parse_arg(argv[i], "iomode=", &iomode);
 		parse_arg(argv[i], "read_fd=", &read_fd);
-                parse_arg(argv[i], "event_type=", &event_type);
+		parse_arg(argv[i], "type=", &type);
 	}
+
+	signal(SIGPIPE, SIG_IGN);
 
 	// open share memory
 	if (dir) {
-		if (!nohead){
-			printf(
-				"MemoryUsage(kb),"
-				"Duration(ms),"
-				"ReadPerf(mb/s),"
-				"WritePerf(mb/s)\n");
+		if (!nohead) {
+			printf("MemoryUsage(kb),"
+			       "Duration(ms),"
+			       "ReadPerf(mb/s),"
+			       "WritePerf(mb/s)\n");
 		}
-
 	}
-	if (dir == 1){
-		void **all_threads = malloc(sizeof(void *) *threads);
-		pid_t *all_pids =  malloc(sizeof(pid_t) * threads);
-		void **all_param = malloc(sizeof(void *) *threads);
+	if (dir == 1) {
+		void **all_threads = malloc(sizeof(void *) * threads);
+		pid_t *all_pids = malloc(sizeof(pid_t) * threads);
+		void **all_param = malloc(sizeof(void *) * threads);
 		for (int i = 0; i < threads; i++) {
 			int64_t fds[2];
-			if (event_type != 4){
-				fipc2(fds, iomode == 0 ? O_NONBLOCK : 0, event_type);
+			if (type != 4) {
+				fipc2(fds, 0, type);
 			} else {
 				int pipefd[2];
 				pipe(pipefd);
-				if (iomode == 0)
-					fcntl(pipefd[0], F_SETFD, O_NONBLOCK);
-				else
-					fipc_clear_fd_flag(pipefd[0], O_NONBLOCK);
-				
+				fipc_clear_fd_flag(pipefd[0], O_NONBLOCK);
+
 				configure_pipe_size(pipefd[0]);
 				fipc_clear_fd_flag(pipefd[0], FD_CLOEXEC);
 				fds[0] = pipefd[0];
 				fds[1] = pipefd[1];
 			}
 			pid_t pid = fork();
-			if (pid == 0){
+			if (pid == 0) {
 				char str_dir[32];
 				char str_chunk[32];
-				char str_iomode[32];
 				char str_fd[32];
 
 				sprintf(str_dir, "dir=%ld", 1 - dir);
-				sprintf(str_chunk, "recv_chunk_size=%ld", send_chunk_size);
-				sprintf(str_iomode, "iomode=%ld", iomode);
+				sprintf(str_chunk, "recv_chunk_size=%ld",
+					send_chunk_size);
 				sprintf(str_fd, "read_fd=%ld", fds[0]);
 				fipc_close(fds[1]);
-				execl(argv[0], argv[0], str_dir, str_chunk, str_iomode, str_fd, (char*)NULL);
+				execl(argv[0], argv[0], str_dir, str_chunk, str_fd, (char *)NULL);
 			} else {
 				fipc_close(fds[0]);
 				all_pids[i] = pid;
-				struct perf_thread_p *p = malloc(sizeof(struct perf_thread_p));
-				p->channel = fds[1];					
-				all_threads[i] = create_thread(perf_thread_callback, (void *)p);
+				struct perf_thread_p *p
+					= malloc(sizeof(struct perf_thread_p));
+				p->channel = fds[1];
+				p->read_size = p->write_size = 0;
+				all_threads[i] = create_thread(
+					perf_thread_callback, (void *)p);
 				all_param[i] = (void *)p;
 			}
-
 		}
 
 		void *timer = create_timer(1000, timer_callback_fun, all_param);
 
-		for (int i = 0; i < threads; i++){
+		for (int i = 0; i < threads; i++) {
 			join_thread(all_threads[i]);
 			int status;
 			waitpid(all_pids[i], &status, 0);
@@ -295,5 +295,5 @@ int main(int argc, char **argv)
 		perf_thread_callback((void *)p);
 	}
 
-    return 0;
+	return 0;
 }

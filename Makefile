@@ -4,6 +4,11 @@ TEST_FILE = $(wildcard test/*.c)
 TESTS = $(patsubst test/%.c,%.test,$(TEST_FILE))
 TARGET = fipc
 CFLAGS := -Iinc -Isrc -L`pwd` -DNDEBUG
+ifeq ($(uname),Darwin)
+LDFLAGs = -lpthread
+else
+LDFLAGS = -lrt -lpthread
+endif
 
 all: clean share static test
 
@@ -17,7 +22,7 @@ static: $(OBJS)
 	gcc $(CFLAGS) -c -fpic -o $@ $^
 
 %.test: test/%.c
-	gcc $(CFLAGS) -o $@ $^ -l$(TARGET) -lrt -lpthread
+	gcc $(CFLAGS) -o $@ $^ -l$(TARGET) $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) lib$(TARGET).* $(TESTS)

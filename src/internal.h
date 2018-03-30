@@ -1,9 +1,9 @@
 #ifndef _INTERNAL_H_
 #define _INTERNAL_H_
 
-#include <stdint.h>
 #include <fipc.h>
 #include <fipc_poll.h>
+#include <stdint.h>
 
 #define FIPC_CHANNEL_SIZE (2 * 1024 * 1024)
 #define FIPC_BLOCK_SIZE (32 * 1024)
@@ -24,7 +24,7 @@ typedef struct _fipc_block
 	int64_t amount;
 	int64_t offset;
 	char buf[FIPC_BLOCK_SIZE];
-}fipc_block;
+} fipc_block;
 
 typedef struct _fipc_channel
 {
@@ -36,7 +36,7 @@ typedef struct _fipc_channel
 	int64_t wt_idx;
 	fipc_block backlog;
 	fipc_block blocks[FIPC_BLOCK_NUMBER];
-}fipc_channel;
+} fipc_channel;
 
 typedef struct _fipc_op
 {
@@ -46,7 +46,7 @@ typedef struct _fipc_op
 	int (*wait_wte)(fipc_fd fd, fipc_block *block);
 	int (*poll)(struct fipc_pollfd *fds, nfds_t nfds, int timeout);
 
-}fipc_op;
+} fipc_op;
 
 int fipc_clear_fd_flag(int fd, int flag);
 
