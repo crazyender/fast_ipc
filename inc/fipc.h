@@ -4,9 +4,32 @@
 #include <stdint.h>
 #include <unistd.h>
 
-int fipc(int64_t fipcfd[2], int robust);
+typedef enum _fipc_type
+{
+        FIPC_FD_PIPE = 0x1,
+        FIPC_FD_EVENT = 0x2,
+        FIPC_FD_SPIN = 0x3,
+        FIPC_FD_MASK= 0xff,
+}fipc_type;
 
-int fipc2(int64_t fipcfd[2], int flags, int robust);
+
+typedef union _fipc_fd
+{
+	struct _mgmt
+	{
+		short rde;
+		short wte;
+		short shm;
+		short control;
+	} mgmt;
+	int64_t raw;
+}fipc_fd;
+
+void fipc_init();
+
+int fipc(int64_t fipcfd[2], fipc_type type);
+
+int fipc2(int64_t fipcfd[2], int flags, fipc_type type);
 
 int fipc_close(int64_t fd);
 

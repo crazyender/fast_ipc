@@ -6,4 +6,7 @@
 *.sdf
 tags
 *.exvim
+**/.exvim*
 *.exproject
+*.test
+core
