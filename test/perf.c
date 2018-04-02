@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 
 				sprintf(str_dir, "dir=%ld", 1 - dir);
 				sprintf(str_chunk, "recv_chunk_size=%ld",
-					send_chunk_size);
+					4096);
 				sprintf(str_fd, "read_fd=%ld", fds[0]);
 				fipc_close(fds[1]);
 				execl(argv[0], argv[0], str_dir, str_chunk, str_fd, (char *)NULL);

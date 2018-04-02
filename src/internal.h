@@ -17,25 +17,28 @@
 #define atomic_inc(x) atomic_add_and_fetch(x, 1)
 #define atomic_dec(x) atomic_add_and_fetch(x, -1)
 
+#define likely(x) 	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
+
 typedef struct _fipc_block
 {
+	char buf[FIPC_BLOCK_SIZE];
 	int64_t status;
 	int64_t available;
 	int64_t amount;
 	int64_t offset;
-	char buf[FIPC_BLOCK_SIZE];
 } fipc_block;
 
 typedef struct _fipc_channel
 {
+	fipc_block blocks[FIPC_BLOCK_NUMBER];
+	fipc_block backlog;
 #ifndef NDEBUG
 	int64_t read_size;
 	int64_t write_size;
 #endif
 	int64_t rd_idx;
 	int64_t wt_idx;
-	fipc_block backlog;
-	fipc_block blocks[FIPC_BLOCK_NUMBER];
 } fipc_channel;
 
 typedef struct _fipc_op
@@ -52,7 +55,9 @@ int fipc_clear_fd_flag(int fd, int flag);
 
 void fd_cache_init();
 
-void lock_fd(int fd);
+void lock_fd_read(int fd);
+
+void lock_fd_write(int fd);
 
 void unlock_fd(int fd);
 

@@ -28,10 +28,9 @@ int spin_wait_rde(fipc_fd fd, fipc_block *block)
 	int relax = 1;
 
 	while (1) {
-		if (block->status != 0) {
-			if (atomic_get(&block->status) != 0)
-				break;
-		}
+		if (atomic_get(&block->status) != 0) {
+			break;
+    }
 
 		if (fd.mgmt.rde == -2) {
 			errno = EAGAIN;
@@ -59,10 +58,9 @@ int spin_wait_wte(fipc_fd fd, fipc_block *block)
 	int relax = 1;
 
 	while (1) {
-		if (block->status == 0) {
-			if (atomic_get(&block->status) == 0)
-				break;
-		}
+		if (atomic_get(&block->status) == 0){
+			break;
+    }
 
 		if (fd.mgmt.wte == -2) {
 			errno = EAGAIN;

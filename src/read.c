@@ -22,7 +22,7 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 	if (_fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
 		return read((int)_fd, buf, size);
 
-	lock_fd(fd.mgmt.shm);
+	lock_fd_read(fd.mgmt.shm);
 
 	channel = get_channel(fd.mgmt.shm);
 	if (!channel) {
@@ -30,10 +30,10 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 		goto done;
 	}
 
-	while (size_left) {
+	while (likely(size_left)) {
 		int ret;
 		ssize_t copy_size;
-		if (channel->backlog.amount) {
+		if (unlikely(channel->backlog.amount)) {
 			copy_size = channel->backlog.amount > size
 				? size
 				: channel->backlog.amount;
@@ -50,12 +50,12 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 		idx %= FIPC_BLOCK_NUMBER;
 		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
 			      ->wait_rde(fd, &channel->blocks[idx]);
-		if (ret < 0) {
+		if (unlikely(ret < 0)) {
 			channel->rd_idx--;
 			if (ret_size == 0)
 				ret_size = ret;
 			goto done;
-		} else if (ret == 0) {
+		} else if (unlikely(ret == 0)) {
 			channel->rd_idx--;
 			goto done;
 		}

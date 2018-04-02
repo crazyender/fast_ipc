@@ -6,22 +6,30 @@
 
 #define MAX_CACHE_FD 10 * 1024
 static void *fds[MAX_CACHE_FD] = { NULL };
-static pthread_mutex_t locks[MAX_CACHE_FD];
+static pthread_rwlock_t locks[MAX_CACHE_FD];
 
 void fd_cache_init()
 {
 	int i = 0;
 	for (i = 0; i < MAX_CACHE_FD; i++) {
-		pthread_mutex_init(&locks[i], NULL);
+		pthread_rwlock_init(&locks[i], NULL);
 	}
 }
 
-void lock_fd(int fd)
+void lock_fd_read(int fd)
 {
 	if (fd < 0 || fd >= MAX_CACHE_FD)
 		return;
 
-	pthread_mutex_lock(&locks[fd]);
+	pthread_rwlock_rdlock(&locks[fd]);
+}
+
+void lock_fd_write(int fd)
+{
+	if (fd < 0 || fd >= MAX_CACHE_FD)
+		return;
+
+	pthread_rwlock_wrlock(&locks[fd]);
 }
 
 void unlock_fd(int fd)
@@ -29,7 +37,7 @@ void unlock_fd(int fd)
 	if (fd < 0 || fd >= MAX_CACHE_FD)
 		return;
 
-	pthread_mutex_unlock(&locks[fd]);
+	pthread_rwlock_unlock(&locks[fd]);
 }
 
 fipc_channel *get_channel(int fd)
@@ -41,6 +49,7 @@ fipc_channel *get_channel(int fd)
 	if (fds[fd] != NULL)
 		return fds[fd];
 
+	// slow path
 	if (fcntl(fd, F_GETFL) < 0)
 		return NULL;
 

@@ -23,26 +23,26 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 	if (size > FIPC_CHANNEL_SIZE / 2)
 		size = FIPC_CHANNEL_SIZE / 2;
 
-	lock_fd(fd.mgmt.shm);
+	lock_fd_read(fd.mgmt.shm);
 
 	channel = get_channel(fd.mgmt.shm);
-	if (!channel) {
+	if (unlikely(!channel)) {
 		ret_size = -1;
 		goto done;
 	}
 
-	while (size_left) {
+	while (likely(size_left)) {
 		idx = channel->wt_idx++;
 		idx %= FIPC_BLOCK_NUMBER;
 
 		int ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
 				  ->wait_wte(fd, &channel->blocks[idx]);
-		if (ret < 0) {
+		if (unlikely(ret < 0)) {
 			channel->wt_idx--;
 			if (ret_size == 0)
 				ret_size = ret;
 			goto done;
-		} else if (ret == 0) {
+		} else if (unlikely(ret == 0)) {
 			channel->wt_idx--;
 			goto done;
 		}
