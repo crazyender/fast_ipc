@@ -12,8 +12,8 @@
 
 #define atomic_add_and_fetch(x, y) __sync_add_and_fetch((x), (y))
 #define atomic_fetch_and_add(x, y) __sync_fetch_and_add((x), (y))
-#define atomic_get(x) atomic_add_and_fetch(x, 0)
-#define atomic_set(x, y) __sync_lock_test_and_set((x), (y))
+#define atomic_get(x) *((volatile int64_t *)x)
+#define atomic_set(x, y) (*x = y)
 #define atomic_inc(x) atomic_add_and_fetch(x, 1)
 #define atomic_dec(x) atomic_add_and_fetch(x, -1)
 
