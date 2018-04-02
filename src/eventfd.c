@@ -83,7 +83,7 @@ int eventfd_wait_rde(fipc_fd fd, fipc_block *block)
         // decreate read quota
         event = 1;
         ret = read(fd.mgmt.rde, &event, sizeof(event));
-        if (ret < 0)
+        if (ret <= 0)
                 return ret;
 
         // increate write quota
@@ -103,7 +103,7 @@ int eventfd_wait_wte(fipc_fd fd, fipc_block *block)
         // decreate write quota
         event = 1;
         ret = read(fd.mgmt.wte, &event, sizeof(event));
-        if (ret < 0)
+        if (ret <= 0)
                 return ret;
 
         // increate read quota

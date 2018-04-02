@@ -4,10 +4,10 @@ TEST_FILE = $(wildcard test/*.c)
 TESTS = $(patsubst test/%.c,%.test,$(TEST_FILE))
 TARGET = fipc
 CFLAGS := -Iinc -Isrc -L`pwd` -DNDEBUG
-ifeq ($(uname),Darwin)
-LDFLAGs = -lpthread
+ifeq ($(shell uname),Darwin)
+	LDFLAGS = -lpthread
 else
-LDFLAGS = -lrt -lpthread
+	LDFLAGS = -lrt -lpthread
 endif
 
 all: clean share static test

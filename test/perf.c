@@ -74,6 +74,7 @@ struct perf_thread_p
 	int64_t channel;
 	int64_t read_size;
 	int64_t write_size;
+	pid_t remote_pid;
 };
 
 static int wait_for_channel(int64_t id, int mode)
@@ -164,11 +165,11 @@ static int timer_callback_fun(int real_dur, void *p)
 	printf("%ld,%d,%ld,%ld\n", total_mem / 1024, real_dur, read_perf,
 		write_perf);
 	test_times++;
-	if (test_times >= loops) {
+	if ((test_times >= loops) || (total_read == 0 && total_write == 0)) {
 		for (int i = 0; i < threads; i++) {
-			printf("close fd %.16lx\n", param[i]->channel);
-			fipc_close(param[i]->channel);
+			kill(param[i]->remote_pid, SIGKILL);
 		}
+		exit(0);
 	}
 	return 0;
 }
@@ -272,6 +273,7 @@ int main(int argc, char **argv)
 					= malloc(sizeof(struct perf_thread_p));
 				p->channel = fds[1];
 				p->read_size = p->write_size = 0;
+				p->remote_pid = pid;
 				all_threads[i] = create_thread(
 					perf_thread_callback, (void *)p);
 				all_param[i] = (void *)p;

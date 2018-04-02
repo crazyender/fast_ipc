@@ -112,11 +112,11 @@ int fipc_close(int64_t _fd)
 	if (!(fd.mgmt.control & FIPC_FD_MASK))
 		return close((int)_fd);
 
-	lock_fd(fd.mgmt.shm);
-	// after closing, map shm fd will fail
 	close(fd.mgmt.shm);
-	clear_channel(fd.mgmt.shm);
 	ret = get_op(fd.mgmt.control & FIPC_FD_MASK)->close(fd);
+	lock_fd(fd.mgmt.shm);
+	clear_channel(fd.mgmt.shm);
+	// after closing, map shm fd will fail
 	unlock_fd(fd.mgmt.shm);
 	return ret;
 }

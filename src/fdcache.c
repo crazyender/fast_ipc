@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <fcntl.h>
 
 #define MAX_CACHE_FD 10 * 1024
 static void *fds[MAX_CACHE_FD] = { NULL };
@@ -39,6 +40,9 @@ fipc_channel *get_channel(int fd)
 	// fast path
 	if (fds[fd] != NULL)
 		return fds[fd];
+
+	if (fcntl(fd, F_GETFL) < 0)
+		return NULL;
 
 	void *addr = mmap(NULL, sizeof(fipc_channel), PROT_READ | PROT_WRITE,
 		MAP_SHARED, fd, 0);

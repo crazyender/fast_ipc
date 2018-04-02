@@ -52,7 +52,7 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 			      ->wait_rde(fd, &channel->blocks[idx]);
 		if (ret < 0) {
 			channel->rd_idx--;
-			if (!ret_size)
+			if (ret_size == 0)
 				ret_size = ret;
 			goto done;
 		} else if (ret == 0) {

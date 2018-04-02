@@ -2,6 +2,7 @@
 #include <fipc.h>
 #include <internal.h>
 #include <sched.h>
+#include <fcntl.h>
 
 int spin_open(fipc_fd fds[2])
 {
@@ -41,7 +42,11 @@ int spin_wait_rde(fipc_fd fd, fipc_block *block)
                 if (retries < 200)
                         continue;
                 else
+		{
 			usleep(relax++);
+			if (relax > 100 && fcntl(fd.mgmt.shm, F_GETFL) < 0)
+				return -1;
+		}
 
 	}
 
@@ -67,7 +72,11 @@ int spin_wait_wte(fipc_fd fd, fipc_block *block)
                 if (retries < 200)
                         continue;
                 else
+		{
 			usleep(relax++);
+			if (relax > 100 && fcntl(fd.mgmt.shm, F_GETFL) < 0)
+				return -1;
+		}
 	}
 
 	return 1;

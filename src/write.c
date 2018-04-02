@@ -39,7 +39,7 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 				  ->wait_wte(fd, &channel->blocks[idx]);
 		if (ret < 0) {
 			channel->wt_idx--;
-			if (!ret_size)
+			if (ret_size == 0)
 				ret_size = ret;
 			goto done;
 		} else if (ret == 0) {
