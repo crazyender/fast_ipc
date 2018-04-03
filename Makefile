@@ -5,7 +5,8 @@ TESTS = $(patsubst test/%.c,%.test,$(TEST_FILE))
 TARGET = fipc
 CFLAGS := -Iinc -Isrc -L`pwd` -DNDEBUG
 ifeq ($(shell uname),Darwin)
-	LDFLAGS = -lpthread -lcrypto
+	CFLAGS += -I/usr/local/opt/openssl/include
+	LDFLAGS = -L/usr/local/opt/openssl/lib -lpthread -lcrypto
 else
 	LDFLAGS = -lrt -lpthread -lcrypto
 endif
