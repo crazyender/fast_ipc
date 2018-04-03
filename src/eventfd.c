@@ -78,42 +78,35 @@ int eventfd_close(fipc_fd fd)
 int eventfd_wait_rde(fipc_fd fd, fipc_block *block)
 {
 	int64_t event = 1;
-        int ret = -1;
 
         // decreate read quota
         event = 1;
-        ret = read(fd.mgmt.rde, &event, sizeof(event));
-        if (ret <= 0)
-                return ret;
+        return read(fd.mgmt.rde, &event, sizeof(event));
+}
 
+int eventfd_notify_wte(fipc_fd fd, fipc_block *block)
+{
+        int64_t event = 1;
         // increate write quota
         event = 1;
-        ret = write(fd.mgmt.wte, &event, sizeof(event));
-        if (ret < 0)
-                return ret;
-
-        return ret;
+        return write(fd.mgmt.wte, &event, sizeof(event));
 }
 
 int eventfd_wait_wte(fipc_fd fd, fipc_block *block)
 {
 	int64_t event = 1;
-        int ret = -1;
 
         // decreate write quota
         event = 1;
-        ret = read(fd.mgmt.wte, &event, sizeof(event));
-        if (ret <= 0)
-                return ret;
+        return read(fd.mgmt.wte, &event, sizeof(event));
+}
 
+int eventfd_notify_rde(fipc_fd fd, fipc_block *block)
+{
+        int64_t event = 1;
         // increate read quota
         event = 1;
-        ret = write(fd.mgmt.rde, &event, sizeof(event));
-        if (ret < 0)
-                return ret;
-
-        return ret;
-
+        return write(fd.mgmt.rde, &event, sizeof(event));
 }
 
 int eventfd_poll(struct fipc_pollfd *fds, nfds_t nfds, int timeout)
@@ -126,7 +119,9 @@ fipc_op eventfd_op = {
         .open = eventfd_open,
         .close = eventfd_close,
         .wait_rde = eventfd_wait_rde,
+        .notify_wte = eventfd_notify_wte,
         .wait_wte = eventfd_wait_wte,
+        .notify_rde = eventfd_notify_rde,
         .poll = eventfd_poll
 };
 #endif

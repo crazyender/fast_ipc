@@ -24,7 +24,6 @@ typedef struct _fipc_block
 {
 	char buf[FIPC_BLOCK_SIZE];
 	int64_t status;
-	int64_t available;
 	int64_t amount;
 	int64_t offset;
 } fipc_block;
@@ -46,7 +45,9 @@ typedef struct _fipc_op
 	int (*open)(fipc_fd fds[2]);
 	int (*close)(fipc_fd fd);
 	int (*wait_rde)(fipc_fd fd, fipc_block *block);
+	int (*notify_wte)(fipc_fd fd, fipc_block *block);
 	int (*wait_wte)(fipc_fd fd, fipc_block *block);
+	int (*notify_rde)(fipc_fd fd, fipc_block *block);
 	int (*poll)(struct fipc_pollfd *fds, nfds_t nfds, int timeout);
 
 } fipc_op;

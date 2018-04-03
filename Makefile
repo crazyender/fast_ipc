@@ -5,9 +5,9 @@ TESTS = $(patsubst test/%.c,%.test,$(TEST_FILE))
 TARGET = fipc
 CFLAGS := -Iinc -Isrc -L`pwd` -DNDEBUG
 ifeq ($(shell uname),Darwin)
-	LDFLAGS = -lpthread
+	LDFLAGS = -lpthread -lcrypto
 else
-	LDFLAGS = -lrt -lpthread
+	LDFLAGS = -lrt -lpthread -lcrypto
 endif
 
 all: clean share static test

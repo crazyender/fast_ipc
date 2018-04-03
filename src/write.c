@@ -54,12 +54,18 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 			copy_size);
 		channel->blocks[idx].amount = copy_size;
 		channel->blocks[idx].offset = 0;
-		atomic_set(&channel->blocks[idx].status, 1);
 		ret_size += copy_size;
 		size_left -= copy_size;
 #ifndef NDEBUG
 		atomic_add_and_fetch(&channel->write_size, copy_size);
 #endif
+		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
+				->notify_rde(fd, &channel->blocks[idx]);
+		if (ret <= 0){
+			// fatal error
+			ret_size = -1;
+			goto done;
+		}
 	}
 
 done:

@@ -34,8 +34,8 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 		int ret;
 		ssize_t copy_size;
 		if (unlikely(channel->backlog.amount)) {
-			copy_size = channel->backlog.amount > size
-				? size
+			copy_size = channel->backlog.amount > size_left
+				? size_left
 				: channel->backlog.amount;
 			memcpy((char *)buf + ret_size,
 				channel->backlog.buf + channel->backlog.offset,
@@ -49,7 +49,7 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 		idx = channel->rd_idx++;
 		idx %= FIPC_BLOCK_NUMBER;
 		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
-			      ->wait_rde(fd, &channel->blocks[idx]);
+				->wait_rde(fd, &channel->blocks[idx]);
 		if (unlikely(ret < 0)) {
 			channel->rd_idx--;
 			if (ret_size == 0)
@@ -73,14 +73,21 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 				channel->blocks[idx].amount);
 			channel->backlog.amount = channel->blocks[idx].amount;
 			channel->backlog.offset = 0;
+			channel->blocks[idx].amount = 0;
+			channel->blocks[idx].offset = 0;
 		}
 		size_left -= copy_size;
 		ret_size += copy_size;
-		atomic_set(&channel->blocks[idx].status, 0);
-
 #ifndef NDEBUG
 		atomic_add_and_fetch(&channel->read_size, copy_size);
 #endif
+		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
+				->notify_wte(fd, &channel->blocks[idx]);
+		if (ret <= 0){
+			// fatal error
+			ret_size = -1;
+			goto done;
+		}
 	}
 
 done:

@@ -4,9 +4,10 @@
 #include <internal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <poll.h>
 
 static char pesudo_pipe_buffer[4096];
-static int pipe_buffer_size = (64 * 1024);
+static const int default_pipe_buffer_size = (64 * 1024);
 
 static int configure_pipe_size(int fd)
 {
@@ -20,12 +21,23 @@ static int configure_pipe_size(int fd)
 	if (ret < 0) {
 		return ret;
 	}
-
-	pipe_buffer_size = pipe_size;
 #else
 
 #endif
 	return 0;
+}
+
+static int get_pipe_size(int fd)
+{
+#ifdef F_GETPIPE_SZ
+	int pipe_size = fcntl(fd, F_GETPIPE_SZ);
+	if (pipe_size < 0) {
+		return pipe_size;
+	}
+	return pipe_size;
+#else
+	return default_pipe_buffer_size;
+#endif
 }
 
 int pipe_open(fipc_fd fds[2])
@@ -42,11 +54,22 @@ int pipe_open(fipc_fd fds[2])
 	if (configure_pipe_size(pipefd[0]) < 0)
 		goto fail;
 
+	if (configure_pipe_size(pipefd[1]) < 0)
+		goto fail;
+
 	ret = fipc_clear_fd_flag(pipefd[0], FD_CLOEXEC);
 	if (ret < 0)
 		goto fail;
 
 	ret = fipc_clear_fd_flag(pipefd[1], FD_CLOEXEC);
+	if (ret < 0)
+		goto fail;
+
+	ret = fipc_clear_fd_flag(pipefd[0], O_NONBLOCK);
+	if (ret < 0)
+		goto fail;
+
+	ret = fipc_clear_fd_flag(pipefd[1], O_NONBLOCK);
 	if (ret < 0)
 		goto fail;
 
@@ -85,14 +108,94 @@ int pipe_close(fipc_fd fd)
 
 int pipe_wait_rde(fipc_fd fd, fipc_block *block)
 {
-	return read(fd.mgmt.rde, pesudo_pipe_buffer,
-		pipe_buffer_size / FIPC_BLOCK_NUMBER);
+	int ret = fcntl(fd.mgmt.rde, F_GETFL);
+	int timeout = 0;
+	struct pollfd pollfd;
+	int errorevent = POLLHUP | POLLERR | POLLNVAL;
+
+#ifdef POLLRDHUP
+	errorevent |= POLLRDHUP;
+#endif
+	if (ret < 0)
+		return ret;
+
+	if (ret & O_NONBLOCK)
+		timeout = 0;
+	else
+		timeout = -1;
+
+	pollfd.fd = fd.mgmt.rde;
+	pollfd.events = POLLIN | POLLERR;
+	pollfd.revents = 0;
+	ret = poll(&pollfd, 1, timeout);
+	if (ret <= 0)
+		return ret;
+
+	if (pollfd.revents & errorevent)
+		return -1;
+
+	return 1;
+
+}
+
+int pipe_notify_wte(fipc_fd fd, fipc_block *block)
+{
+	int read_size = get_pipe_size(fd.mgmt.rde) / FIPC_BLOCK_NUMBER;
+	int size_left = read_size;
+	int ret = 0;
+	while (size_left) {
+		ret = read(fd.mgmt.rde, pesudo_pipe_buffer, size_left);
+		if (ret <= 0)
+			return ret;
+		size_left -= ret;
+	}
+	return read_size;
 }
 
 int pipe_wait_wte(fipc_fd fd, fipc_block *block)
 {
-	return write(fd.mgmt.wte, pesudo_pipe_buffer,
-		pipe_buffer_size / FIPC_BLOCK_NUMBER);
+	int ret = fcntl(fd.mgmt.wte, F_GETFL);
+	int timeout = 0;
+	struct pollfd pollfd;
+	int errorevent = POLLHUP | POLLERR | POLLNVAL;
+
+#ifdef POLLRDHUP
+	errorevent |= POLLRDHUP;
+#endif
+
+	if (ret < 0)
+		return ret;
+
+	if (ret & O_NONBLOCK)
+		timeout = 0;
+	else
+		timeout = -1;
+
+	pollfd.fd = fd.mgmt.wte;
+	pollfd.events = POLLOUT | POLLERR;
+	pollfd.revents = 0;
+	ret = poll(&pollfd, 1, timeout);
+	if (ret <= 0)
+		return ret;
+
+	if (pollfd.revents & errorevent)
+		return -1;
+
+	return 1;
+}
+
+int pipe_notify_rde(fipc_fd fd, fipc_block *block)
+{
+	int write_size = get_pipe_size(fd.mgmt.wte) / FIPC_BLOCK_NUMBER;
+	int size_left = write_size;
+	int ret = 0;
+	while (size_left) {
+		ret = write(fd.mgmt.wte, pesudo_pipe_buffer, size_left);
+		if (ret <= 0)
+			return ret;
+		size_left -= ret;
+	}
+	return write_size;
 }
 
 int pipe_poll(struct fipc_pollfd *fds, nfds_t nfds, int timeout)
@@ -105,6 +208,8 @@ fipc_op pipe_op = { .open = pipe_open,
 	.close = pipe_close,
 	.wait_rde = pipe_wait_rde,
 	.wait_wte = pipe_wait_wte,
+	.notify_rde = pipe_notify_rde,
+	.notify_wte = pipe_notify_wte,
 	.poll = pipe_poll };
 
 #ifndef __linux__
@@ -112,5 +217,7 @@ fipc_op eventfd_op = { .open = pipe_open,
 	.close = pipe_close,
 	.wait_rde = pipe_wait_rde,
 	.wait_wte = pipe_wait_wte,
+	.notify_rde = pipe_notify_rde,
+	.notify_wte = pipe_notify_wte,
 	.poll = pipe_poll };
 #endif

@@ -30,7 +30,7 @@ int spin_wait_rde(fipc_fd fd, fipc_block *block)
 	while (1) {
 		if (atomic_get(&block->status) != 0) {
 			break;
-    }
+		}
 
 		if (fd.mgmt.rde == -2) {
 			errno = EAGAIN;
@@ -49,6 +49,12 @@ int spin_wait_rde(fipc_fd fd, fipc_block *block)
 
 	}
 
+	return 1;
+}
+
+int spin_notify_wte(fipc_fd fd, fipc_block *block)
+{
+	atomic_set(&block->status, 0);
 	return 1;
 }
 
@@ -80,6 +86,12 @@ int spin_wait_wte(fipc_fd fd, fipc_block *block)
 	return 1;
 }
 
+int spin_notify_rde(fipc_fd fd, fipc_block *block)
+{
+	atomic_set(&block->status, 1);
+	return 1;
+}
+
 int spin_poll(struct fipc_pollfd *fds, nfds_t nfds, int timeout)
 {
 	// FIXME
@@ -90,4 +102,6 @@ fipc_op spin_op = { .open = spin_open,
 	.close = spin_close,
 	.wait_rde = spin_wait_rde,
 	.wait_wte = spin_wait_wte,
+	.notify_rde = spin_notify_rde,
+	.notify_wte = spin_notify_wte,
 	.poll = spin_poll };
