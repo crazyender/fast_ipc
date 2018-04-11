@@ -27,7 +27,7 @@ static int configure_pipe_size(int fd)
 	return 0;
 }
 
-static int get_pipe_size(int fd)
+int get_pipe_size(int fd)
 {
 #ifdef F_GETPIPE_SZ
 	int pipe_size = fcntl(fd, F_GETPIPE_SZ);
@@ -106,9 +106,9 @@ int pipe_close(fipc_fd fd)
 		return 0;
 }
 
-int pipe_wait_rde(fipc_fd fd, fipc_block *block)
+int pipe_wait_rde(fipc_fd fd, fipc_channel *channel)
 {
-	int ret = fcntl(fd.mgmt.rde, F_GETFL);
+	int ret = channel->flags;
 	int timeout = 0;
 	struct pollfd pollfd;
 	int errorevent = POLLHUP | POLLERR | POLLNVAL;
@@ -138,9 +138,9 @@ int pipe_wait_rde(fipc_fd fd, fipc_block *block)
 
 }
 
-int pipe_notify_wte(fipc_fd fd, fipc_block *block)
+int pipe_notify_wte(fipc_fd fd, fipc_channel *channel)
 {
-	int read_size = get_pipe_size(fd.mgmt.rde) / FIPC_BLOCK_NUMBER;
+	int read_size = channel->pipe_size / FIPC_BLOCK_NUMBER;
 	int size_left = read_size;
 	int ret = 0;
 	while (size_left) {
@@ -152,9 +152,9 @@ int pipe_notify_wte(fipc_fd fd, fipc_block *block)
 	return read_size;
 }
 
-int pipe_wait_wte(fipc_fd fd, fipc_block *block)
+int pipe_wait_wte(fipc_fd fd, fipc_channel *channel)
 {
-	int ret = fcntl(fd.mgmt.wte, F_GETFL);
+	int ret = channel->flags;
 	int timeout = 0;
 	struct pollfd pollfd;
 	int errorevent = POLLHUP | POLLERR | POLLNVAL;
@@ -184,9 +184,9 @@ int pipe_wait_wte(fipc_fd fd, fipc_block *block)
 	return 1;
 }
 
-int pipe_notify_rde(fipc_fd fd, fipc_block *block)
+int pipe_notify_rde(fipc_fd fd, fipc_channel *channel)
 {
-	int write_size = get_pipe_size(fd.mgmt.wte) / FIPC_BLOCK_NUMBER;
+	int write_size = channel->pipe_size / FIPC_BLOCK_NUMBER;
 	int size_left = write_size;
 	int ret = 0;
 	while (size_left) {

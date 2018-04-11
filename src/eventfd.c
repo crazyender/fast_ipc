@@ -75,7 +75,7 @@ int eventfd_close(fipc_fd fd)
                 return 0;
 }
 
-int eventfd_wait_rde(fipc_fd fd, fipc_block *block)
+int eventfd_wait_rde(fipc_fd fd, fipc_channel *channel)
 {
 	int64_t event = 1;
 
@@ -84,7 +84,7 @@ int eventfd_wait_rde(fipc_fd fd, fipc_block *block)
         return read(fd.mgmt.rde, &event, sizeof(event));
 }
 
-int eventfd_notify_wte(fipc_fd fd, fipc_block *block)
+int eventfd_notify_wte(fipc_fd fd, fipc_channel *channel)
 {
         int64_t event = 1;
         // increate write quota
@@ -92,7 +92,7 @@ int eventfd_notify_wte(fipc_fd fd, fipc_block *block)
         return write(fd.mgmt.wte, &event, sizeof(event));
 }
 
-int eventfd_wait_wte(fipc_fd fd, fipc_block *block)
+int eventfd_wait_wte(fipc_fd fd, fipc_channel *channel)
 {
 	int64_t event = 1;
 
@@ -101,7 +101,7 @@ int eventfd_wait_wte(fipc_fd fd, fipc_block *block)
         return read(fd.mgmt.wte, &event, sizeof(event));
 }
 
-int eventfd_notify_rde(fipc_fd fd, fipc_block *block)
+int eventfd_notify_rde(fipc_fd fd, fipc_channel *channel)
 {
         int64_t event = 1;
         // increate read quota

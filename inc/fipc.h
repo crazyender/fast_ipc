@@ -6,10 +6,10 @@
 
 typedef enum _fipc_type
 {
-        FIPC_FD_PIPE = 0x1,
-        FIPC_FD_EVENT = 0x2,
-        FIPC_FD_SPIN = 0x3,
-        FIPC_FD_MASK= 0xff,
+	FIPC_FD_PIPE = 0x1,
+	FIPC_FD_EVENT = 0x2,
+	FIPC_FD_SPIN = 0x3,
+	FIPC_FD_MASK= 0xff,
 }fipc_type;
 
 

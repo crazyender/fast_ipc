@@ -36,7 +36,7 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 		idx %= FIPC_BLOCK_NUMBER;
 
 		int ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
-				  ->wait_wte(fd, &channel->blocks[idx]);
+				  ->wait_wte(fd, channel);
 		if (unlikely(ret < 0)) {
 			channel->wt_idx--;
 			if (ret_size == 0)
@@ -60,7 +60,7 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 		atomic_add_and_fetch(&channel->write_size, copy_size);
 #endif
 		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
-				->notify_rde(fd, &channel->blocks[idx]);
+				->notify_rde(fd, channel);
 		if (ret <= 0){
 			// fatal error
 			ret_size = -1;

@@ -38,18 +38,19 @@ typedef struct _fipc_channel
 #endif
 	int64_t rd_idx;
 	int64_t wt_idx;
+	int64_t pipe_size;
+	int64_t flags;
 } fipc_channel;
 
 typedef struct _fipc_op
 {
 	int (*open)(fipc_fd fds[2]);
 	int (*close)(fipc_fd fd);
-	int (*wait_rde)(fipc_fd fd, fipc_block *block);
-	int (*notify_wte)(fipc_fd fd, fipc_block *block);
-	int (*wait_wte)(fipc_fd fd, fipc_block *block);
-	int (*notify_rde)(fipc_fd fd, fipc_block *block);
+	int (*wait_rde)(fipc_fd fd, fipc_channel *block);
+	int (*notify_wte)(fipc_fd fd, fipc_channel *block);
+	int (*wait_wte)(fipc_fd fd, fipc_channel *block);
+	int (*notify_rde)(fipc_fd fd, fipc_channel *block);
 	int (*poll)(struct fipc_pollfd *fds, nfds_t nfds, int timeout);
-
 } fipc_op;
 
 int fipc_clear_fd_flag(int fd, int flag);
@@ -67,5 +68,7 @@ fipc_op *get_op(fipc_type type);
 fipc_channel *get_channel(int fd);
 
 void clear_channel(int fd);
+
+int get_pipe_size(int fd);
 
 #endif
