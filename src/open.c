@@ -12,14 +12,15 @@ static int64_t shm_name_index = -1;
 int fipc(int64_t fipcfd[2], fipc_type type)
 {
 	int64_t name_index = atomic_inc(&shm_name_index);
-	char name[64] = { 0 };
+	char name[64] = {0};
 	int shm_fd = -1;
 	int shm_fd2 = -1;
-	fipc_fd events_fd[2] = { -1, -1 };
+	fipc_fd events_fd[2] = {-1, -1};
 	int ret = -1;
 	int i = 0;
 
-	if (fipcfd == NULL) {
+	if (fipcfd == NULL)
+	{
 		errno = EINVAL;
 		goto fail;
 	}
@@ -55,7 +56,8 @@ int fipc(int64_t fipcfd[2], fipc_type type)
 	fipcfd[0] = events_fd[0].raw;
 	fipcfd[1] = events_fd[1].raw;
 
-	if (type == FIPC_FD_PIPE){
+	if (type == FIPC_FD_PIPE)
+	{
 		lock_fd_write(shm_fd);
 		get_channel(shm_fd)->pipe_size = get_pipe_size(events_fd[0].mgmt.rde);
 		unlock_fd(shm_fd);
@@ -69,7 +71,8 @@ fail:
 	if (shm_fd2 >= 0)
 		close(shm_fd2);
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < 2; i++)
+	{
 		if (events_fd[i].raw < 0)
 			continue;
 
@@ -89,14 +92,16 @@ int fipc2(int64_t fipcfd[2], int flags, fipc_type type)
 		return ret;
 
 	// a dirty hack
-	if ((flags & O_NONBLOCK) && (type == FIPC_FD_SPIN)) {
+	if ((flags & O_NONBLOCK) && (type == FIPC_FD_SPIN))
+	{
 		((fipc_fd *)&fipcfd[0])->mgmt.rde = -2;
 		((fipc_fd *)&fipcfd[0])->mgmt.wte = -2;
 		((fipc_fd *)&fipcfd[1])->mgmt.rde = -2;
 		((fipc_fd *)&fipcfd[1])->mgmt.wte = -2;
 	}
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < 2; i++)
+	{
 		ret = fipc_fcntl(fipcfd[i], F_SETFD, flags);
 		if (ret < 0)
 			return ret;
@@ -110,10 +115,11 @@ int fipc2(int64_t fipcfd[2], int flags, fipc_type type)
 
 int fipc_close(int64_t _fd)
 {
-	fipc_fd fd = { .raw = _fd };
+	fipc_fd fd = {.raw = _fd};
 	int ret = -1;
 
-	if (_fd < 0) {
+	if (_fd < 0)
+	{
 		errno = EINVAL;
 		return -1;
 	}
@@ -132,15 +138,17 @@ int fipc_close(int64_t _fd)
 
 int64_t fipc_dup(int64_t fd)
 {
-	fipc_fd oldfd = { .raw = fd };
-	fipc_fd newfd = { .raw = -1 };
+	fipc_fd oldfd = {.raw = fd};
+	fipc_fd newfd = {.raw = -1};
 
-	if (fd < 0) {
+	if (fd < 0)
+	{
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (!(oldfd.mgmt.control & FIPC_FD_MASK)) {
+	if (!(oldfd.mgmt.control & FIPC_FD_MASK))
+	{
 		return dup((int)fd);
 	}
 

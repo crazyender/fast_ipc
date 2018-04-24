@@ -4,7 +4,6 @@
 #include <fcntl.h>
 #include <sys/eventfd.h>
 
-
 int eventfd_open(fipc_fd fds[2])
 {
         int rdfd = -1;
@@ -63,11 +62,11 @@ fail:
 int eventfd_close(fipc_fd fd)
 {
         int ret = 0;
-	if (fd.mgmt.rde >= 0)
-		ret = (close(fd.mgmt.rde) < 0);
+        if (fd.mgmt.rde >= 0)
+                ret = (close(fd.mgmt.rde) < 0);
 
-	if (fd.mgmt.wte >= 0)
-		ret |= (close(fd.mgmt.wte) < 0);
+        if (fd.mgmt.wte >= 0)
+                ret |= (close(fd.mgmt.wte) < 0);
 
         if (ret)
                 return -1;
@@ -77,7 +76,7 @@ int eventfd_close(fipc_fd fd)
 
 int eventfd_wait_rde(fipc_fd fd, fipc_channel *channel)
 {
-	int64_t event = 1;
+        int64_t event = 1;
 
         // decreate read quota
         event = 1;
@@ -94,7 +93,7 @@ int eventfd_notify_wte(fipc_fd fd, fipc_channel *channel)
 
 int eventfd_wait_wte(fipc_fd fd, fipc_channel *channel)
 {
-	int64_t event = 1;
+        int64_t event = 1;
 
         // decreate write quota
         event = 1;
@@ -116,12 +115,11 @@ int eventfd_poll(struct fipc_pollfd *fds, nfds_t nfds, int timeout)
 }
 
 fipc_op eventfd_op = {
-        .open = eventfd_open,
-        .close = eventfd_close,
-        .wait_rde = eventfd_wait_rde,
-        .notify_wte = eventfd_notify_wte,
-        .wait_wte = eventfd_wait_wte,
-        .notify_rde = eventfd_notify_rde,
-        .poll = eventfd_poll
-};
+    .open = eventfd_open,
+    .close = eventfd_close,
+    .wait_rde = eventfd_wait_rde,
+    .notify_wte = eventfd_notify_wte,
+    .wait_wte = eventfd_wait_wte,
+    .notify_rde = eventfd_notify_rde,
+    .poll = eventfd_poll};
 #endif

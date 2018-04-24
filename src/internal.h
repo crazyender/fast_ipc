@@ -17,8 +17,8 @@
 #define atomic_inc(x) atomic_add_and_fetch(x, 1)
 #define atomic_dec(x) atomic_add_and_fetch(x, -1)
 
-#define likely(x) 	__builtin_expect(!!(x), 1)
-#define unlikely(x)	__builtin_expect(!!(x), 0)
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 typedef struct _fipc_block
 {

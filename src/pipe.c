@@ -13,12 +13,14 @@ static int configure_pipe_size(int fd)
 {
 #ifdef F_SETPIPE_SZ
 	int pipe_size = (int)sysconf(_SC_PAGESIZE);
-	if (pipe_size < 0) {
+	if (pipe_size < 0)
+	{
 		return pipe_size;
 	}
 
 	int ret = fcntl(fd, F_SETPIPE_SZ, pipe_size);
-	if (ret < 0) {
+	if (ret < 0)
+	{
 		return ret;
 	}
 #else
@@ -31,7 +33,8 @@ int get_pipe_size(int fd)
 {
 #ifdef F_GETPIPE_SZ
 	int pipe_size = fcntl(fd, F_GETPIPE_SZ);
-	if (pipe_size < 0) {
+	if (pipe_size < 0)
+	{
 		return pipe_size;
 	}
 	return pipe_size;
@@ -43,7 +46,7 @@ int get_pipe_size(int fd)
 int pipe_open(fipc_fd fds[2])
 {
 	int ret;
-	int pipefd[2] = { -1, -1 };
+	int pipefd[2] = {-1, -1};
 
 	/* using pipe */
 	ret = pipe(pipefd);
@@ -112,6 +115,9 @@ int pipe_wait_rde(fipc_fd fd, fipc_channel *channel)
 	int timeout = 0;
 	struct pollfd pollfd;
 	int errorevent = POLLHUP | POLLERR | POLLNVAL;
+	fipc_block *block = &channel->blocks[(channel->rd_idx - 1) % FIPC_BLOCK_NUMBER];
+	if (atomic_get(&block->status) != 0)
+		return 1;
 
 #ifdef POLLRDHUP
 	errorevent |= POLLRDHUP;
@@ -135,7 +141,6 @@ int pipe_wait_rde(fipc_fd fd, fipc_channel *channel)
 		return -1;
 
 	return 1;
-
 }
 
 int pipe_notify_wte(fipc_fd fd, fipc_channel *channel)
@@ -143,12 +148,16 @@ int pipe_notify_wte(fipc_fd fd, fipc_channel *channel)
 	int read_size = channel->pipe_size / FIPC_BLOCK_NUMBER;
 	int size_left = read_size;
 	int ret = 0;
-	while (size_left) {
+	fipc_block *block = &channel->blocks[(channel->rd_idx - 1) % FIPC_BLOCK_NUMBER];
+
+	while (size_left)
+	{
 		ret = read(fd.mgmt.rde, pesudo_pipe_buffer, size_left);
 		if (ret <= 0)
 			return ret;
 		size_left -= ret;
 	}
+	atomic_set(&block->status, 0);
 	return read_size;
 }
 
@@ -158,6 +167,9 @@ int pipe_wait_wte(fipc_fd fd, fipc_channel *channel)
 	int timeout = 0;
 	struct pollfd pollfd;
 	int errorevent = POLLHUP | POLLERR | POLLNVAL;
+	fipc_block *block = &channel->blocks[(channel->wt_idx - 1) % FIPC_BLOCK_NUMBER];
+	if (atomic_get(&block->status) == 0)
+		return 1;
 
 #ifdef POLLRDHUP
 	errorevent |= POLLRDHUP;
@@ -189,12 +201,16 @@ int pipe_notify_rde(fipc_fd fd, fipc_channel *channel)
 	int write_size = channel->pipe_size / FIPC_BLOCK_NUMBER;
 	int size_left = write_size;
 	int ret = 0;
-	while (size_left) {
+	fipc_block *block = &channel->blocks[(channel->wt_idx - 1) % FIPC_BLOCK_NUMBER];
+
+	while (size_left)
+	{
 		ret = write(fd.mgmt.wte, pesudo_pipe_buffer, size_left);
 		if (ret <= 0)
 			return ret;
 		size_left -= ret;
 	}
+	atomic_set(&block->status, 1);
 	return write_size;
 }
 
@@ -204,20 +220,20 @@ int pipe_poll(struct fipc_pollfd *fds, nfds_t nfds, int timeout)
 	return -1;
 }
 
-fipc_op pipe_op = { .open = pipe_open,
-	.close = pipe_close,
-	.wait_rde = pipe_wait_rde,
-	.wait_wte = pipe_wait_wte,
-	.notify_rde = pipe_notify_rde,
-	.notify_wte = pipe_notify_wte,
-	.poll = pipe_poll };
+fipc_op pipe_op = {.open = pipe_open,
+				   .close = pipe_close,
+				   .wait_rde = pipe_wait_rde,
+				   .wait_wte = pipe_wait_wte,
+				   .notify_rde = pipe_notify_rde,
+				   .notify_wte = pipe_notify_wte,
+				   .poll = pipe_poll};
 
 #ifndef __linux__
-fipc_op eventfd_op = { .open = pipe_open,
-	.close = pipe_close,
-	.wait_rde = pipe_wait_rde,
-	.wait_wte = pipe_wait_wte,
-	.notify_rde = pipe_notify_rde,
-	.notify_wte = pipe_notify_wte,
-	.poll = pipe_poll };
+fipc_op eventfd_op = {.open = pipe_open,
+					  .close = pipe_close,
+					  .wait_rde = pipe_wait_rde,
+					  .wait_wte = pipe_wait_wte,
+					  .notify_rde = pipe_notify_rde,
+					  .notify_wte = pipe_notify_wte,
+					  .poll = pipe_poll};
 #endif

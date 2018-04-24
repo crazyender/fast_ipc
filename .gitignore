@@ -11,3 +11,4 @@ tags
 *.test
 core
 **/.vscode/**
+test.dat

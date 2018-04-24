@@ -5,13 +5,14 @@
 #include <fcntl.h>
 
 #define MAX_CACHE_FD 10 * 1024
-static void *fds[MAX_CACHE_FD] = { NULL };
+static void *fds[MAX_CACHE_FD] = {NULL};
 static pthread_rwlock_t locks[MAX_CACHE_FD];
 
 void fd_cache_init()
 {
 	int i = 0;
-	for (i = 0; i < MAX_CACHE_FD; i++) {
+	for (i = 0; i < MAX_CACHE_FD; i++)
+	{
 		pthread_rwlock_init(&locks[i], NULL);
 	}
 }
@@ -54,7 +55,7 @@ fipc_channel *get_channel(int fd)
 		return NULL;
 
 	void *addr = mmap(NULL, sizeof(fipc_channel), PROT_READ | PROT_WRITE,
-		MAP_SHARED, fd, 0);
+					  MAP_SHARED, fd, 0);
 	if (addr == (void *)MAP_FAILED)
 		return NULL;
 

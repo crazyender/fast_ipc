@@ -23,7 +23,7 @@ void get_dbg_info(
 {
 	int64_t rs, ws;
 	fipc_channel *channel = NULL;
-	fipc_fd fd = { .raw = _fd };
+	fipc_fd fd = {.raw = _fd};
 	if (_fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
 		return;
 
