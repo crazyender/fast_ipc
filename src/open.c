@@ -56,7 +56,7 @@ int fipc(int64_t fipcfd[2], fipc_type type)
 	fipcfd[0] = events_fd[0].raw;
 	fipcfd[1] = events_fd[1].raw;
 
-	if (type == FIPC_FD_PIPE)
+	if ((events_fd[0].mgmt.control & FIPC_FD_MASK) == FIPC_FD_PIPE)
 	{
 		lock_fd_write(shm_fd);
 		get_channel(shm_fd)->pipe_size = get_pipe_size(events_fd[0].mgmt.rde);

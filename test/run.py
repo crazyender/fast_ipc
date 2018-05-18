@@ -27,7 +27,7 @@ def run_cmd(t, s, n, cmd):
                 median.append(int(vals[3].strip()))
         f.write("{0},{1},{2},{3}\n".format(t, s, n, median[len(median)/2]))
         f.close()
-        os.stdout.write("{0}\n".format(median[len(median)/2]))
+        sys.stdout.write("{0}\n".format(median[len(median)/2]))
 
 loops = 5
 
@@ -38,5 +38,5 @@ for thread in threads:
                 for ipc in types.keys():
                         cmd = "LD_LIBRARY_PATH=\".\" ./perf.test threads={0} size={1} type={2} loops={3} nohead=1".format(thread, size, ipc, loops)
                         total_time = total_time - loops
-                        os.stdout.write(cmd + " (left {0} seconds) => ".format(total_time))
+                        sys.stdout.write(cmd + " (left {0} seconds) => ".format(total_time))
                         run_cmd(thread, size, types[ipc], cmd)

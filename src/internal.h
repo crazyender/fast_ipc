@@ -13,12 +13,12 @@
 #define atomic_add_and_fetch(x, y) __sync_add_and_fetch((x), (y))
 #define atomic_fetch_and_add(x, y) __sync_fetch_and_add((x), (y))
 #define atomic_get(x) *((volatile int64_t *)x)
-#define atomic_set(x, y) (*x = y)
+#define atomic_set(x, y) (*((volatile int64_t *)x) = y)
 #define atomic_inc(x) atomic_add_and_fetch(x, 1)
 #define atomic_dec(x) atomic_add_and_fetch(x, -1)
 
-#define likely(x) __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
+#define likely(x) 	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
 
 typedef struct _fipc_block
 {
