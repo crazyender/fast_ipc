@@ -3,6 +3,7 @@
 
 #include <fipc.h>
 #include <fipc_poll.h>
+#include <fipc_debug.h>
 #include <stdint.h>
 
 #define FIPC_CHANNEL_SIZE (2 * 1024 * 1024)
@@ -32,14 +33,14 @@ typedef struct _fipc_channel
 {
 	fipc_block blocks[FIPC_BLOCK_NUMBER];
 	fipc_block backlog;
-#ifndef NDEBUG
-	int64_t read_size;
-	int64_t write_size;
+#ifdef DEBUG
+	fipc_debug_info dbg;
 #endif
 	int64_t rd_idx;
 	int64_t wt_idx;
 	int64_t pipe_size;
 	int64_t flags;
+	int64_t data_cnts;
 } fipc_channel;
 
 typedef struct _fipc_op

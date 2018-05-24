@@ -80,6 +80,9 @@ int eventfd_wait_rde(fipc_fd fd, fipc_channel *channel)
 
         // decreate read quota
         event = 1;
+#ifdef DEBUG
+        atomic_inc(&channel->dbg.syscalls);
+#endif
         return read(fd.mgmt.rde, &event, sizeof(event));
 }
 
@@ -88,6 +91,9 @@ int eventfd_notify_wte(fipc_fd fd, fipc_channel *channel)
         int64_t event = 1;
         // increate write quota
         event = 1;
+#ifdef DEBUG
+        atomic_inc(&channel->dbg.syscalls);
+#endif
         return write(fd.mgmt.wte, &event, sizeof(event));
 }
 
@@ -97,6 +103,9 @@ int eventfd_wait_wte(fipc_fd fd, fipc_channel *channel)
 
         // decreate write quota
         event = 1;
+#ifdef DEBUG
+        atomic_inc(&channel->dbg.syscalls);
+#endif
         return read(fd.mgmt.wte, &event, sizeof(event));
 }
 
@@ -105,6 +114,9 @@ int eventfd_notify_rde(fipc_fd fd, fipc_channel *channel)
         int64_t event = 1;
         // increate read quota
         event = 1;
+#ifdef DEBUG
+        atomic_inc(&channel->dbg.syscalls);
+#endif
         return write(fd.mgmt.rde, &event, sizeof(event));
 }
 

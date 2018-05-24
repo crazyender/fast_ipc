@@ -119,9 +119,17 @@ int main(int argc, char **argv)
 	if (read_end) {
 		fd = atoll(argv[3]);
 	} else {
-		ret = fipc(fds, type);
-		if (ret < 0) {
-			die("can not acquire channel\n");
+		if (type == 4){
+			int pipes[2];
+			pipe(pipes);
+			fds[0] = pipes[0];
+			fds[1] = pipes[1];
+
+		} else {
+			ret = fipc(fds, type);
+			if (ret < 0) {
+				die("can not acquire channel\n");
+			}
 		}
 
 		pid_t pid = fork();

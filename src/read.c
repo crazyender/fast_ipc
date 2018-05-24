@@ -10,18 +10,14 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 	fipc_channel *channel = NULL;
 	int64_t idx;
 	ssize_t ret_size = 0;
-	ssize_t size_left = size;
+	ssize_t size_left = 0;
 	int is_again = 0;
 	int is_error = 0;
 
-	if (_fd < 0)
-	{
-		errno = EINVAL;
-		return -1;
-	}
-
 	if (_fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
 		return read((int)_fd, buf, size);
+
+	size_left = size;
 
 	lock_fd_read(fd.mgmt.shm);
 
@@ -36,7 +32,7 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 	{
 		int ret;
 		ssize_t copy_size;
-		if (unlikely(channel->backlog.amount))
+		if (likely(channel->backlog.amount))
 		{
 			copy_size = channel->backlog.amount > size_left
 							? size_left
@@ -76,6 +72,9 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 		channel->blocks[idx].amount -= copy_size;
 		if (channel->blocks[idx].amount)
 		{
+#ifdef DEBUG
+			channel->dbg.backlog_used++;
+#endif
 			memcpy(channel->backlog.buf,
 				   channel->blocks[idx].buf + copy_size,
 				   channel->blocks[idx].amount);
@@ -86,9 +85,6 @@ ssize_t fipc_read(int64_t _fd, void *buf, size_t size)
 		}
 		size_left -= copy_size;
 		ret_size += copy_size;
-#ifndef NDEBUG
-		atomic_add_and_fetch(&channel->read_size, copy_size);
-#endif
 		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
 				  ->notify_wte(fd, channel);
 		if (ret <= 0)

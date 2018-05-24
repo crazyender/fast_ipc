@@ -40,7 +40,9 @@ int spin_wait_rde(fipc_fd fd, fipc_channel *channel)
 			errno = EAGAIN;
 			return -1;
 		}
-
+#ifdef DEBUG
+		atomic_inc(&channel->dbg.write_contents);
+#endif
 		retries++;
 		if (retries < 5000)
 			continue;
@@ -80,6 +82,9 @@ int spin_wait_wte(fipc_fd fd, fipc_channel *channel)
 			errno = EAGAIN;
 			return -1;
 		}
+#ifdef DEBUG
+		atomic_inc(&channel->dbg.read_contents);
+#endif
 		retries++;
 		if (retries < 5000)
 			continue;

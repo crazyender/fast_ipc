@@ -10,19 +10,12 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 	fipc_channel *channel = NULL;
 	int64_t idx;
 	ssize_t ret_size = 0;
-	ssize_t size_left = size;
-
-	if (_fd < 0)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	ssize_t size_left = 0;
 
 	if (_fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
 		return write((int)_fd, buf, size);
 
-	if (size > FIPC_CHANNEL_SIZE / 2)
-		size = FIPC_CHANNEL_SIZE / 2;
+	size_left = size;
 
 	lock_fd_read(fd.mgmt.shm);
 
@@ -62,9 +55,6 @@ ssize_t fipc_write(int64_t _fd, void *buf, size_t size)
 		channel->blocks[idx].offset = 0;
 		ret_size += copy_size;
 		size_left -= copy_size;
-#ifndef NDEBUG
-		atomic_add_and_fetch(&channel->write_size, copy_size);
-#endif
 		ret = get_op(fd.mgmt.control & FIPC_FD_MASK)
 				  ->notify_rde(fd, channel);
 		if (ret <= 0)

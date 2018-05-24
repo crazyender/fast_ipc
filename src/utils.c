@@ -16,31 +16,44 @@ int fipc_clear_fd_flag(int fd, int flag)
 	return 0;
 }
 
-#ifndef NDEBUG
+#ifdef DEBUG
 
-void get_dbg_info(
-	int64_t _fd, int64_t *mem_size, int64_t *read_size, int64_t *write_size)
+void fipc_get_dbg_info(int64_t _fd, fipc_debug_info *info)
 {
-	int64_t rs, ws;
-	fipc_channel *channel = NULL;
 	fipc_fd fd = {.raw = _fd};
-	if (_fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
+	fipc_channel *channel = NULL;
+
+	if (!info || _fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
 		return;
-
-	lock_fd(fd.mgmt.shm);
-
+	
+	lock_fd_read(fd.mgmt.shm);
 	channel = get_channel(fd.mgmt.shm);
 	if (!channel)
 		goto done;
 
-	*mem_size = sizeof(fipc_channel);
-	rs = atomic_set(&channel->read_size, 0);
-	ws = atomic_set(&channel->write_size, 0);
-	*read_size = rs;
-	*write_size = ws;
-
+	memcpy(info, &channel->dbg, sizeof(*info));
 done:
+
 	unlock_fd(fd.mgmt.shm);
+}
+
+void fipc_clear_dbg_info(int64_t _fd)
+{
+	fipc_fd fd = {.raw = _fd};
+	fipc_channel *channel = NULL;
+
+	if (_fd < 0 || !(fd.mgmt.control & FIPC_FD_MASK))
+		return;
+	
+	lock_fd_read(fd.mgmt.shm);
+	channel = get_channel(fd.mgmt.shm);
+	if (!channel)
+		goto done;
+
+	memset(&channel->dbg, 0, sizeof(channel->dbg));
+done:
+
+	unlock_fd(fd.mgmt.shm);	
 }
 
 #endif

@@ -3,7 +3,7 @@ OBJS = $(patsubst %.c,%.o,$(SRCS))
 TEST_FILE = $(wildcard test/*.c)
 TESTS = $(patsubst test/%.c,%.test,$(TEST_FILE))
 TARGET = fipc
-CFLAGS := -Iinc -Isrc -L`pwd` -DNDEBUG
+CFLAGS := -Iinc -Isrc -L`pwd` -O3
 ifeq ($(shell uname),Darwin)
 	CFLAGS += -I/usr/local/opt/openssl/include
 	LDFLAGS = -L/usr/local/opt/openssl/lib -lpthread -lcrypto
@@ -31,4 +31,4 @@ clean:
 test: $(TESTS)
 
 debug: clean
-	$(MAKE) -C . all CFLAGS="$(CFLAGS) -g"
+	$(MAKE) -C . all CFLAGS="$(CFLAGS) -g -DDEBUG"

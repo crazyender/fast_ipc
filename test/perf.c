@@ -151,19 +151,37 @@ static int timer_callback_fun(int real_dur, void *p)
 	int64_t total_read = 0;
 	int64_t total_write = 0;
 	int64_t total_mem = 0;
+#ifdef DEBUG
+	fipc_debug_info total = {0};
+	fipc_debug_info info = {0};
+#endif
 	for (int i = 0; i < threads; i++) {
 		total_read += param[i]->read_size;
 		total_write += param[i]->write_size;
 		param[i]->read_size = 0;
 		param[i]->write_size = 0;
+#ifdef DEBUG
+		fipc_get_dbg_info(param[i]->channel, &info);
+		fipc_clear_dbg_info(param[i]->channel);
+		total.read_contents += info.read_contents;
+		total.write_contents += info.write_contents;
+		total.syscalls += info.syscalls;
+		total.backlog_used += info.backlog_used;
+#endif
 	}
+
 	int64_t read_perf
 		= real_dur ? (total_read * 1000 / (real_dur * 1024 * 1024)) : 0;
 	int64_t write_perf = real_dur
 		? (total_write * 1000 / (real_dur * 1024 * 1024))
 		: 0;
-	printf("%ld,%d,%ld,%ld\n", total_mem / 1024, real_dur, read_perf,
+
+	printf("%ld,%d,%ld,%ld", total_mem / 1024, real_dur, read_perf,
 		write_perf);
+#ifdef DEBUG
+	printf(",%ld,%ld,%ld,%ld", total.read_contents, total.write_contents, total.syscalls, total.backlog_used);
+#endif
+	printf("\n");
 	test_times++;
 	if ((test_times >= loops) || (total_read == 0 && total_write == 0)) {
 		for (int i = 0; i < threads; i++) {
@@ -233,7 +251,14 @@ int main(int argc, char **argv)
 			printf("MemoryUsage(kb),"
 			       "Duration(ms),"
 			       "ReadPerf(mb/s),"
-			       "WritePerf(mb/s)\n");
+			       "WritePerf(mb/s)");
+#ifdef DEBUG
+			printf(",ReadContents,"
+			       "WriteContents,"
+			       "SystemCalls,"
+			       "BacklogUsed");
+#endif
+			printf("\n");
 		}
 	}
 	if (dir == 1) {
@@ -262,7 +287,7 @@ int main(int argc, char **argv)
 
 				sprintf(str_dir, "dir=%ld", 1 - dir);
 				sprintf(str_chunk, "recv_chunk_size=%ld",
-					4096);
+					send_chunk_size);
 				sprintf(str_fd, "read_fd=%ld", fds[0]);
 				fipc_close(fds[1]);
 				execl(argv[0], argv[0], str_dir, str_chunk, str_fd, (char *)NULL);

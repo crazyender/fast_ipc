@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <poll.h>
+#include <sched.h>
 
 static char pesudo_pipe_buffer[4096];
 static const int default_pipe_buffer_size = (64 * 1024);
@@ -116,8 +117,13 @@ int pipe_wait_rde(fipc_fd fd, fipc_channel *channel)
 	struct pollfd pollfd;
 	int errorevent = POLLHUP | POLLERR | POLLNVAL;
 	fipc_block *block = &channel->blocks[(channel->rd_idx - 1) % FIPC_BLOCK_NUMBER];
+
 	if (atomic_get(&block->status) != 0)
 		return 1;
+#ifdef DEBUG
+	else
+		channel->dbg.read_contents++;
+#endif
 
 #ifdef POLLRDHUP
 	errorevent |= POLLRDHUP;
@@ -133,6 +139,9 @@ int pipe_wait_rde(fipc_fd fd, fipc_channel *channel)
 	pollfd.fd = fd.mgmt.rde;
 	pollfd.events = POLLIN | POLLERR;
 	pollfd.revents = 0;
+#ifdef DEBUG
+        atomic_inc(&channel->dbg.syscalls);
+#endif
 	ret = poll(&pollfd, 1, timeout);
 	if (ret <= 0)
 		return ret;
@@ -152,6 +161,9 @@ int pipe_notify_wte(fipc_fd fd, fipc_channel *channel)
 
 	while (size_left)
 	{
+#ifdef DEBUG
+        	atomic_inc(&channel->dbg.syscalls);
+#endif
 		ret = read(fd.mgmt.rde, pesudo_pipe_buffer, size_left);
 		if (ret <= 0)
 			return ret;
@@ -168,8 +180,13 @@ int pipe_wait_wte(fipc_fd fd, fipc_channel *channel)
 	struct pollfd pollfd;
 	int errorevent = POLLHUP | POLLERR | POLLNVAL;
 	fipc_block *block = &channel->blocks[(channel->wt_idx - 1) % FIPC_BLOCK_NUMBER];
+
 	if (atomic_get(&block->status) == 0)
 		return 1;
+#ifdef DEBUG
+	else
+		channel->dbg.write_contents++;
+#endif
 
 #ifdef POLLRDHUP
 	errorevent |= POLLRDHUP;
@@ -186,6 +203,9 @@ int pipe_wait_wte(fipc_fd fd, fipc_channel *channel)
 	pollfd.fd = fd.mgmt.wte;
 	pollfd.events = POLLOUT | POLLERR;
 	pollfd.revents = 0;
+#ifdef DEBUG
+        atomic_inc(&channel->dbg.syscalls);
+#endif
 	ret = poll(&pollfd, 1, timeout);
 	if (ret <= 0)
 		return ret;
@@ -205,6 +225,9 @@ int pipe_notify_rde(fipc_fd fd, fipc_channel *channel)
 
 	while (size_left)
 	{
+#ifdef DEBUG
+        	atomic_inc(&channel->dbg.syscalls);
+#endif
 		ret = write(fd.mgmt.wte, pesudo_pipe_buffer, size_left);
 		if (ret <= 0)
 			return ret;
