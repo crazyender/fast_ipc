@@ -4,11 +4,10 @@
 #include <poll.h>
 #include <stdint.h>
 
-struct fipc_pollfd
-{
-	int64_t fd;
-	short events;
-	short revents;
+struct fipc_pollfd {
+  int64_t fd;
+  short events;
+  short revents;
 };
 
 int fipc_poll(struct fipc_pollfd *fds, nfds_t nfds, int timeout);

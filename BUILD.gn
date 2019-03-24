@@ -1,0 +1,83 @@
+config("fipc_config") {
+  include_dirs = [
+    "inc",
+    "src"
+  ]
+
+  lib_dirs = [
+    "."
+  ]
+
+  if (is_mac) {
+    include_dirs += [
+      "/usr/local/opt/openssl/include"
+    ]
+    lib_dirs += [
+      "/usr/local/opt/openssl/lib"
+    ]
+  }
+
+  libs = [
+      "pthread",
+      "crypto",
+  ]
+  if (!is_mac && !is_ios) {
+    libs += [
+      "rt"
+    ]
+  }
+}
+
+source_set("fast_ipc") {
+  configs += [":fipc_config"]
+  sources = [
+    "src/eventfd.c",
+    "src/fcntl.c",
+    "src/fdcache.c",
+    "src/internal.h",
+    "src/open.c",
+    "src/operation.c",
+    "src/pipe.c",
+    "src/poll.c",
+    "src/read.c",
+    "src/write.c",
+    "src/spin.c",
+    "src/utils.c",
+    "inc/fipc_debug.h",
+    "inc/fipc_fcntl.h",
+    "inc/fipc_poll.h",
+    "inc/fipc_select.h",
+    "inc/fipc.h"
+  ]
+}
+
+static_library("fast_ipc_static") {
+  is_major = true
+  complete_static_lib = true
+  deps = [":fast_ipc"]
+  output_name = "fast_ipc"
+}
+
+shared_library("fast_ipc_shared") {
+  is_major = true
+  deps = [":fast_ipc"]
+  output_name = "fast_ipc"
+}
+
+executable("openclose_test") {
+  configs += [":fipc_config"]
+  deps = [":fast_ipc"]
+  sources = ["test/openclose.c", "test/fipc_test.h"]
+}
+
+executable("perf_test") {
+  configs += [":fipc_config"]
+  deps = [":fast_ipc"]
+  sources = ["test/perf.c", "test/fipc_test.h"]
+}
+
+executable("readwrite_test") {
+  configs += [":fipc_config"]
+  deps = [":fast_ipc"]
+  sources = ["test/readwrite.c", "test/fipc_test.h"]
+}

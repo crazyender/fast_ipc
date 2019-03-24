@@ -2,8 +2,8 @@
 #define _INTERNAL_H_
 
 #include <fipc.h>
-#include <fipc_poll.h>
 #include <fipc_debug.h>
+#include <fipc_poll.h>
 #include <stdint.h>
 
 #define FIPC_CHANNEL_SIZE (2 * 1024 * 1024)
@@ -18,40 +18,37 @@
 #define atomic_inc(x) atomic_add_and_fetch(x, 1)
 #define atomic_dec(x) atomic_add_and_fetch(x, -1)
 
-#define likely(x) 	__builtin_expect(!!(x), 1)
-#define unlikely(x)	__builtin_expect(!!(x), 0)
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
-typedef struct _fipc_block
-{
-	char buf[FIPC_BLOCK_SIZE];
-	int64_t status;
-	int64_t amount;
-	int64_t offset;
+typedef struct _fipc_block {
+  char buf[FIPC_BLOCK_SIZE];
+  int64_t status;
+  int64_t amount;
+  int64_t offset;
 } fipc_block;
 
-typedef struct _fipc_channel
-{
-	fipc_block blocks[FIPC_BLOCK_NUMBER];
-	fipc_block backlog;
+typedef struct _fipc_channel {
+  fipc_block blocks[FIPC_BLOCK_NUMBER];
+  fipc_block backlog;
 #ifdef DEBUG
-	fipc_debug_info dbg;
+  fipc_debug_info dbg;
 #endif
-	int64_t rd_idx;
-	int64_t wt_idx;
-	int64_t pipe_size;
-	int64_t flags;
-	int64_t data_cnts;
+  int64_t rd_idx;
+  int64_t wt_idx;
+  int64_t pipe_size;
+  int64_t flags;
+  int64_t data_cnts;
 } fipc_channel;
 
-typedef struct _fipc_op
-{
-	int (*open)(fipc_fd fds[2]);
-	int (*close)(fipc_fd fd);
-	int (*wait_rde)(fipc_fd fd, fipc_channel *block);
-	int (*notify_wte)(fipc_fd fd, fipc_channel *block);
-	int (*wait_wte)(fipc_fd fd, fipc_channel *block);
-	int (*notify_rde)(fipc_fd fd, fipc_channel *block);
-	int (*poll)(struct fipc_pollfd *fds, nfds_t nfds, int timeout);
+typedef struct _fipc_op {
+  int (*open)(fipc_fd fds[2]);
+  int (*close)(fipc_fd fd);
+  int (*wait_rde)(fipc_fd fd, fipc_channel *block);
+  int (*notify_wte)(fipc_fd fd, fipc_channel *block);
+  int (*wait_wte)(fipc_fd fd, fipc_channel *block);
+  int (*notify_rde)(fipc_fd fd, fipc_channel *block);
+  int (*poll)(struct fipc_pollfd *fds, nfds_t nfds, int timeout);
 } fipc_op;
 
 int fipc_clear_fd_flag(int fd, int flag);
